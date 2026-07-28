@@ -41,7 +41,7 @@ export default function PhotoBooth() {
     <div className={styles.page}>
       <header className={styles.header}>
         <a className={styles.logo} href="/" aria-label="KabineCam home">
-          <span className={styles.logoMark}>K</span>
+          <img src="/logo.png" alt="Camilla Almeida logo" className={styles.logoMark} />
         </a>
         <button
           className={styles.infoButton}
