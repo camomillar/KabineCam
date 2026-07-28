@@ -9,8 +9,9 @@ html, body {
 }
 
 body {
-  background: #faf8f3;
-  color: #1c1a17;
+  background: linear-gradient(160deg, #fdeff7 0%, #eef0fc 45%, #e8f6fd 100%);
+  background-attachment: fixed;
+  color: #47444e;
   font-family: system-ui, -apple-system, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;

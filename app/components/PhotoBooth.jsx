@@ -52,7 +52,9 @@ export default function PhotoBooth() {
         </button>
       </header>
 
-      <h1 className={styles.title}>KabineCam</h1>
+      <h1 className={styles.title}>
+        Kabine<span className={styles.titleAccent}>Cam</span>
+      </h1>
 
       <main className={styles.content}>
         {screen === 'landing' && (
