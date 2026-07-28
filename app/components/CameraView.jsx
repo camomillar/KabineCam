@@ -7,39 +7,80 @@ const PHOTO_COUNT = 4
 const COUNTDOWN_DURATION = 3
 const PAUSE_BETWEEN_PHOTOS = 1500
 
-// Mechanical camera shutter sound: two short filtered noise clicks
-// ("k-chik"), like a real shutter opening and closing
-const playShutterSound = () => {
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+// Browsers cap how many AudioContexts a page may hold, so keep one
+// around rather than opening a fresh one per shot
+let audioContext = null
+const getAudioContext = () => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume()
+  }
+  return audioContext
+}
 
-  const click = (startTime, duration, volume, frequency) => {
-    const bufferSize = Math.floor(audioContext.sampleRate * duration)
-    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
-    const data = buffer.getChannelData(0)
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2)
-    }
-
-    const source = audioContext.createBufferSource()
-    source.buffer = buffer
-
-    const filter = audioContext.createBiquadFilter()
-    filter.type = 'bandpass'
-    filter.frequency.value = frequency
-    filter.Q.value = 0.8
-
-    const gain = audioContext.createGain()
-    gain.gain.value = volume
-
-    source.connect(filter)
-    filter.connect(gain)
-    gain.connect(audioContext.destination)
-    source.start(startTime)
+// A burst of filtered noise: the mechanical rustle of moving parts
+const noiseBurst = (ctx, { at, duration, volume, type, frequency, Q }) => {
+  const frames = Math.floor(ctx.sampleRate * duration)
+  const buffer = ctx.createBuffer(1, frames, ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < frames; i++) {
+    data[i] = Math.random() * 2 - 1
   }
 
-  const now = audioContext.currentTime
-  click(now, 0.05, 0.9, 2500) // shutter opens: sharp, bright click
-  click(now + 0.08, 0.07, 0.7, 1600) // shutter closes: slightly duller clack
+  const source = ctx.createBufferSource()
+  source.buffer = buffer
+
+  const filter = ctx.createBiquadFilter()
+  filter.type = type
+  filter.frequency.value = frequency
+  filter.Q.value = Q
+
+  // Near-instant attack, quick decay — percussive, not a "whoosh"
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.exponentialRampToValueAtTime(volume, at + 0.002)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
+
+  source.connect(filter).connect(gain).connect(ctx.destination)
+  source.start(at)
+  source.stop(at + duration)
+}
+
+// A low pitched-down thud: the weight of the mirror hitting the body
+const thump = (ctx, { at, duration, volume, from, to }) => {
+  const osc = ctx.createOscillator()
+  osc.type = 'triangle'
+  osc.frequency.setValueAtTime(from, at)
+  osc.frequency.exponentialRampToValueAtTime(to, at + duration)
+
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.exponentialRampToValueAtTime(volume, at + 0.004)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
+
+  osc.connect(gain).connect(ctx.destination)
+  osc.start(at)
+  osc.stop(at + duration)
+}
+
+// An SLR firing: mirror up and curtain open, then curtain close and
+// mirror down about 110ms later — the classic "ka-chunk"
+const playShutterSound = () => {
+  const ctx = getAudioContext()
+  const t = ctx.currentTime
+
+  // Mirror slap + first curtain
+  thump(ctx, { at: t, duration: 0.07, volume: 0.32, from: 320, to: 90 })
+  noiseBurst(ctx, { at: t, duration: 0.045, volume: 0.5, type: 'bandpass', frequency: 2600, Q: 1.1 })
+  noiseBurst(ctx, { at: t + 0.004, duration: 0.03, volume: 0.26, type: 'highpass', frequency: 5200, Q: 0.7 })
+
+  // Second curtain + mirror returning: duller, a touch softer
+  const back = t + 0.11
+  thump(ctx, { at: back, duration: 0.09, volume: 0.26, from: 260, to: 70 })
+  noiseBurst(ctx, { at: back, duration: 0.06, volume: 0.4, type: 'bandpass', frequency: 1500, Q: 0.9 })
+  noiseBurst(ctx, { at: back + 0.005, duration: 0.035, volume: 0.18, type: 'highpass', frequency: 4000, Q: 0.7 })
 }
 
 export default function CameraView({ onPhotosCapture }) {
