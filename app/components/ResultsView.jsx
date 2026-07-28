@@ -9,6 +9,16 @@ const BORDER_COLOR = '#000'
 export default function ResultsView({ photos, onRetake }) {
   const stripCanvasRef = useRef(null)
   const [downloading, setDownloading] = useState(false)
+  const [stripReady, setStripReady] = useState(false)
+  const [printDone, setPrintDone] = useState(false)
+
+  // Fallback: if the animationend event never fires (e.g. tab was
+  // backgrounded mid-print), reveal the buttons anyway
+  useEffect(() => {
+    if (!stripReady) return
+    const timer = setTimeout(() => setPrintDone(true), 6000)
+    return () => clearTimeout(timer)
+  }, [stripReady])
 
   // Apply vintage B&W + sepia filter and create strip
   useEffect(() => {
@@ -54,6 +64,8 @@ export default function ResultsView({ photos, onRetake }) {
         ctx.drawImage(img, margin, y)
         applyVintageFilter(ctx, margin, y, frameWidth, frameHeight)
       })
+
+      setStripReady(true)
     }
 
     createStrip()
@@ -103,27 +115,57 @@ export default function ResultsView({ photos, onRetake }) {
 
   return (
     <div className={styles.resultsView}>
-      <div className={styles.stripContainer}>
-        <canvas
-          ref={stripCanvasRef}
-          className={styles.stripCanvas}
-        />
+      <div className={styles.machine}>
+        <div className={styles.slot} />
+        <div className={styles.printWrapper}>
+          <canvas
+            ref={stripCanvasRef}
+            className={`${styles.stripCanvas} ${stripReady ? styles.printing : ''}`}
+            onAnimationEnd={() => setPrintDone(true)}
+          />
+        </div>
       </div>
 
-      <div className={styles.buttonGroup}>
-        <button
-          onClick={downloadStrip}
-          disabled={downloading}
-          className={styles.downloadButton}
-        >
-          {downloading ? 'DOWNLOADING...' : 'DOWNLOAD'}
-        </button>
-        <button
-          onClick={onRetake}
-          className={styles.retakeButton}
-        >
-          RETAKE
-        </button>
+      <div className={styles.resultsInfo}>
+        <h1 className={styles.resultsTitle}>
+          Kabine<span className={styles.titleAccent}>Cam</span>
+        </h1>
+        <p className={styles.description}>
+          Wow! It looks great! Download it to keep the moment,
+          or hop back in for another round.
+        </p>
+
+        {printDone && (
+          <div className={styles.buttonGroup}>
+            <button
+              onClick={downloadStrip}
+              disabled={downloading}
+              className={styles.downloadButton}
+            >
+              {downloading ? 'Downloading...' : 'Download'}
+            </button>
+            <button
+              onClick={onRetake}
+              className={styles.retakeButton}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+              Retake
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

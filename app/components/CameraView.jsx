@@ -1,86 +1,45 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { FilesetResolver, ImageSegmenter } from '@mediapipe/tasks-vision'
 import styles from './CameraView.module.css'
 
 const PHOTO_COUNT = 4
 const COUNTDOWN_DURATION = 3
 const PAUSE_BETWEEN_PHOTOS = 1500
 
-// Person segmentation (background removal), loaded once and shared
-let segmenterPromise = null
-const getSegmenter = () => {
-  if (!segmenterPromise) {
-    segmenterPromise = (async () => {
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-      )
-      return ImageSegmenter.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
-        },
-        runningMode: 'IMAGE',
-        outputConfidenceMasks: true,
-      })
-    })()
-  }
-  return segmenterPromise
-}
-
-// Replace everything behind the person with a clean white booth background
-const applyBoothBackground = async (canvas, ctx) => {
-  const segmenter = await getSegmenter()
-  const result = segmenter.segment(canvas)
-
-  const masks = result.confidenceMasks
-  const personMask = masks[masks.length - 1]
-  const mw = personMask.width
-  const mh = personMask.height
-  const maskData = personMask.getAsFloat32Array()
-
-  // Build a white overlay whose alpha is the background confidence,
-  // then scale it over the photo (bilinear scaling feathers the edges)
-  const maskCanvas = document.createElement('canvas')
-  maskCanvas.width = mw
-  maskCanvas.height = mh
-  const maskCtx = maskCanvas.getContext('2d')
-  const maskImage = maskCtx.createImageData(mw, mh)
-
-  for (let i = 0; i < maskData.length; i++) {
-    const alpha = Math.max(0, Math.min(255, Math.round((1 - maskData[i]) * 255)))
-    maskImage.data[i * 4] = 255
-    maskImage.data[i * 4 + 1] = 255
-    maskImage.data[i * 4 + 2] = 255
-    maskImage.data[i * 4 + 3] = alpha
-  }
-
-  maskCtx.putImageData(maskImage, 0, 0)
-  ctx.drawImage(maskCanvas, 0, 0, canvas.width, canvas.height)
-  result.close()
-}
-
-// Camera shutter sound
+// Mechanical camera shutter sound: two short filtered noise clicks
+// ("k-chik"), like a real shutter opening and closing
 const playShutterSound = () => {
   const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+
+  const click = (startTime, duration, volume, frequency) => {
+    const bufferSize = Math.floor(audioContext.sampleRate * duration)
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2)
+    }
+
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+
+    const filter = audioContext.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.value = frequency
+    filter.Q.value = 0.8
+
+    const gain = audioContext.createGain()
+    gain.gain.value = volume
+
+    source.connect(filter)
+    filter.connect(gain)
+    gain.connect(audioContext.destination)
+    source.start(startTime)
+  }
+
   const now = audioContext.currentTime
-
-  // High-pitched beep for camera shutter
-  const oscillator = audioContext.createOscillator()
-  const gainNode = audioContext.createGain()
-
-  oscillator.connect(gainNode)
-  gainNode.connect(audioContext.destination)
-
-  oscillator.frequency.setValueAtTime(800, now)
-  oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.1)
-
-  gainNode.gain.setValueAtTime(0.3, now)
-  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
-
-  oscillator.start(now)
-  oscillator.stop(now + 0.1)
+  click(now, 0.05, 0.9, 2500) // shutter opens: sharp, bright click
+  click(now + 0.08, 0.07, 0.7, 1600) // shutter closes: slightly duller clack
 }
 
 export default function CameraView({ onPhotosCapture }) {
@@ -109,9 +68,6 @@ export default function CameraView({ onPhotosCapture }) {
     }
 
     initCamera()
-
-    // Warm up the segmentation model so it's ready by the first capture
-    getSegmenter().catch(() => {})
 
     return () => {
       if (stream) {
@@ -149,14 +105,6 @@ export default function CameraView({ onPhotosCapture }) {
       canvas.width,
       canvas.height
     )
-
-    // Swap the real background for a white booth backdrop.
-    // If the model isn't available (e.g. offline), keep the original frame.
-    try {
-      await applyBoothBackground(canvas, ctx)
-    } catch (err) {
-      console.warn('Background removal unavailable, keeping original frame', err)
-    }
 
     return canvas.toDataURL('image/png')
   }
@@ -257,18 +205,32 @@ export default function CameraView({ onPhotosCapture }) {
         </div>
       </div>
 
-      {!capturing && countdown === null && (
-        <button
-          onClick={handleStartCapture}
-          className={styles.captureButton}
-        >
-          {photoCount === 0 ? 'CAPTURE' : 'RETAKE'}
-        </button>
-      )}
+      <div className={styles.cameraInfo}>
+        <h1 className={styles.cameraTitle}>
+          Kabine<span className={styles.titleAccent}>Cam</span>
+        </h1>
+        <p className={styles.description}>
+          Smile for the camera! After a quick countdown the booth snaps
+          four photos in a row. Just have fun and let it happen.
+        </p>
 
-      {capturing && (
-        <p className={styles.capturingText}>Capturing... {photoCount}/4</p>
-      )}
+        {!capturing && countdown === null && (
+          <button
+            onClick={handleStartCapture}
+            className={styles.captureButton}
+          >
+            Capture
+          </button>
+        )}
+
+        {countdown !== null && (
+          <p className={styles.capturingText}>Strike a pose!</p>
+        )}
+
+        {capturing && (
+          <p className={styles.capturingText}>Looking good! {photoCount}/4</p>
+        )}
+      </div>
     </div>
   )
 }
