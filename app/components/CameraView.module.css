@@ -1,0 +1,156 @@
+.cameraView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.boothWindow {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 8px solid #1a1a1a;
+  background: #000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.videoContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.canvas {
+  display: none;
+}
+
+.countdownOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.countdownNumber {
+  font-size: clamp(3rem, 20vw, 8rem);
+  font-weight: 900;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  animation: countdownPulse 1s ease-out;
+}
+
+@keyframes countdownPulse {
+  0% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+}
+
+.flashEffect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  animation: flash 0.3s ease-out;
+  pointer-events: none;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.progressDots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 5;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.dot.filled {
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.captureButton {
+  background: #1a1a1a;
+  color: #fff;
+  border: 4px solid #fff;
+  padding: 1.25rem 3rem;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  transition: all 0.1s ease;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.captureButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3);
+}
+
+.captureButton:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.capturingText {
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 1.125rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .captureButton {
+    padding: 1rem 2rem;
+    font-size: 1.25rem;
+  }
+
+  .progressDots {
+    bottom: 0.75rem;
+  }
+}

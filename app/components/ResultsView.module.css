@@ -1,0 +1,94 @@
+.resultsView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.boothWindow {
+  width: 100%;
+  border: 8px solid #1a1a1a;
+  background: #000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stripContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.stripCanvas {
+  max-width: 100%;
+  max-height: 80vh;
+  display: block;
+  image-rendering: auto;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.downloadButton,
+.retakeButton {
+  background: #1a1a1a;
+  color: #fff;
+  border: 4px solid #fff;
+  padding: 1.25rem 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  transition: all 0.1s ease;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.downloadButton:hover,
+.retakeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3);
+}
+
+.downloadButton:active,
+.retakeButton:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.downloadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .downloadButton,
+  .retakeButton {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+
+  .boothWindow {
+    padding: 1rem;
+  }
+}
