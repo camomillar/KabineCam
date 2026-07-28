@@ -48,17 +48,31 @@ export default function CameraView({ onPhotosCapture }) {
   const [capturing, setCapturing] = useState(false)
   const [countdown, setCountdown] = useState(null)
   const [photoCount, setPhotoCount] = useState(0)
-  const [stream, setStream] = useState(null)
+  const streamRef = useRef(null)
   const photosRef = useRef([])
 
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+  }
+
   useEffect(() => {
+    let cancelled = false
+
     const initCamera = async () => {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: false,
         })
-        setStream(mediaStream)
+        // The view may have been left while the permission was resolving
+        if (cancelled) {
+          mediaStream.getTracks().forEach(track => track.stop())
+          return
+        }
+        streamRef.current = mediaStream
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream
         }
@@ -70,9 +84,8 @@ export default function CameraView({ onPhotosCapture }) {
     initCamera()
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
+      cancelled = true
+      stopCamera()
     }
   }, [])
 
@@ -152,9 +165,7 @@ export default function CameraView({ onPhotosCapture }) {
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     // Pass to results
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-    }
+    stopCamera()
     onPhotosCapture(photosRef.current)
   }
 

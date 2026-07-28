@@ -66,9 +66,11 @@ export default function PhotoBooth() {
     setScreen('results')
   }
 
+  // Retake goes straight back to the camera, not the landing screen —
+  // permission is already granted, so the booth is ready immediately
   const handleRetake = () => {
     setPhotos([])
-    setScreen('landing')
+    setScreen('camera')
     setError(null)
   }
 

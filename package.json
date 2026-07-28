@@ -2,6 +2,7 @@
   "name": "kabinecam",
   "version": "1.0.0",
   "description": "Classic black-and-white photobooth inspired by Berlin",
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
