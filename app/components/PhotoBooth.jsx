@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import CameraView from './CameraView'
 import ResultsView from './ResultsView'
+import InfoModal from './InfoModal'
 import styles from './PhotoBooth.module.css'
 
 export default function PhotoBooth() {
   const [screen, setScreen] = useState('landing') // landing | camera | results
   const [photos, setPhotos] = useState([])
   const [error, setError] = useState(null)
+  const [infoOpen, setInfoOpen] = useState(false)
 
   const handleStartClick = async () => {
     try {
@@ -36,35 +38,55 @@ export default function PhotoBooth() {
   }
 
   return (
-    <div className={styles.booth}>
-      {screen === 'landing' && (
-        <div className={styles.landingScreen}>
-          <div className={styles.boothWindow}>
-            <div className={styles.boothFrame}>
-              <h1 className={styles.title}>KabineCam</h1>
-              <p className={styles.subtitle}>Classic Photobooth Vibes</p>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <a className={styles.logo} href="/" aria-label="KabineCam home">
+          <span className={styles.logoMark}>K</span>
+        </a>
+        <button
+          className={styles.infoButton}
+          onClick={() => setInfoOpen(true)}
+          aria-label="About KabineCam"
+        >
+          i
+        </button>
+      </header>
+
+      <h1 className={styles.title}>KabineCam</h1>
+
+      <main className={styles.content}>
+        {screen === 'landing' && (
+          <div className={styles.landingScreen}>
+            <div className={styles.boothWindow}>
+              <div className={styles.boothFrame}>
+                <span className={styles.boothHint}>
+                  4 photos &middot; black &amp; white
+                </span>
+              </div>
             </div>
+            <button
+              onClick={handleStartClick}
+              className={styles.startButton}
+            >
+              Start
+            </button>
+            {error && <p className={styles.error}>{error}</p>}
           </div>
-          <button
-            onClick={handleStartClick}
-            className={styles.startButton}
-          >
-            START
-          </button>
-          {error && <p className={styles.error}>{error}</p>}
-        </div>
-      )}
+        )}
 
-      {screen === 'camera' && (
-        <CameraView onPhotosCapture={handlePhotosCapture} />
-      )}
+        {screen === 'camera' && (
+          <CameraView onPhotosCapture={handlePhotosCapture} />
+        )}
 
-      {screen === 'results' && (
-        <ResultsView
-          photos={photos}
-          onRetake={handleRetake}
-        />
-      )}
+        {screen === 'results' && (
+          <ResultsView
+            photos={photos}
+            onRetake={handleRetake}
+          />
+        )}
+      </main>
+
+      {infoOpen && <InfoModal onClose={() => setInfoOpen(false)} />}
     </div>
   )
 }

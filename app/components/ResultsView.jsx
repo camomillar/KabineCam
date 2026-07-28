@@ -35,30 +35,24 @@ export default function ResultsView({ photos, onRetake }) {
 
       const frameWidth = images[0].width
       const frameHeight = images[0].height
-      const totalHeight = frameHeight * photos.length + FRAME_SPACING * (photos.length - 1)
+      const margin = 24
+      const totalHeight =
+        frameHeight * photos.length +
+        FRAME_SPACING * (photos.length - 1) +
+        margin * 2
 
-      // Set canvas size with white background border
-      canvas.width = frameWidth + 40
-      canvas.height = totalHeight + 40
+      canvas.width = frameWidth + margin * 2
+      canvas.height = totalHeight
 
-      // White background
-      ctx.fillStyle = '#fff'
+      // Black strip background (borders between and around frames)
+      ctx.fillStyle = BORDER_COLOR
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Draw each photo with vintage filter
       images.forEach((img, index) => {
-        const y = 20 + index * (frameHeight + FRAME_SPACING)
-
-        // Draw frame border
-        ctx.strokeStyle = BORDER_COLOR
-        ctx.lineWidth = 2
-        ctx.strokeRect(18, y - 2, frameWidth + 4, frameHeight + 4)
-
-        // Draw image
-        ctx.drawImage(img, 20, y)
-
-        // Apply vintage filter via canvas
-        applyVintageFilter(ctx, 20, y, frameWidth, frameHeight)
+        const y = margin + index * (frameHeight + FRAME_SPACING)
+        ctx.drawImage(img, margin, y)
+        applyVintageFilter(ctx, margin, y, frameWidth, frameHeight)
       })
     }
 
@@ -74,17 +68,21 @@ export default function ResultsView({ photos, onRetake }) {
       const g = data[i + 1]
       const b = data[i + 2]
 
-      // Grayscale
+      // Pure grayscale (black and white)
       const gray = r * 0.299 + g * 0.587 + b * 0.114
 
-      // Sepia effect
-      data[i] = Math.min(gray * 1.1, 255) // Red
-      data[i + 1] = gray * 0.95 // Green
-      data[i + 2] = gray * 0.8 // Blue
+      data[i] = gray // Red
+      data[i + 1] = gray // Green
+      data[i + 2] = gray // Blue
 
-      // Slight contrast boost
-      const adjusted = (data[i] - 128) * 1.1 + 128
-      data[i] = Math.max(0, Math.min(255, adjusted))
+      // Increase contrast for more dramatic B&W
+      const contrast = 1.2
+      const adjusted = (gray - 128) * contrast + 128
+      const finalGray = Math.max(0, Math.min(255, adjusted))
+
+      data[i] = finalGray
+      data[i + 1] = finalGray
+      data[i + 2] = finalGray
     }
 
     ctx.putImageData(imageData, x, y)
@@ -105,13 +103,11 @@ export default function ResultsView({ photos, onRetake }) {
 
   return (
     <div className={styles.resultsView}>
-      <div className={styles.boothWindow}>
-        <div className={styles.stripContainer}>
-          <canvas
-            ref={stripCanvasRef}
-            className={styles.stripCanvas}
-          />
-        </div>
+      <div className={styles.stripContainer}>
+        <canvas
+          ref={stripCanvasRef}
+          className={styles.stripCanvas}
+        />
       </div>
 
       <div className={styles.buttonGroup}>

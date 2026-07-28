@@ -4,8 +4,30 @@ import { useState, useRef, useEffect } from 'react'
 import styles from './CameraView.module.css'
 
 const PHOTO_COUNT = 4
-const COUNTDOWN_DURATION = 5
+const COUNTDOWN_DURATION = 3
 const PAUSE_BETWEEN_PHOTOS = 1500
+
+// Camera shutter sound
+const playShutterSound = () => {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  const now = audioContext.currentTime
+
+  // High-pitched beep for camera shutter
+  const oscillator = audioContext.createOscillator()
+  const gainNode = audioContext.createGain()
+
+  oscillator.connect(gainNode)
+  gainNode.connect(audioContext.destination)
+
+  oscillator.frequency.setValueAtTime(800, now)
+  oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.1)
+
+  gainNode.gain.setValueAtTime(0.3, now)
+  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
+
+  oscillator.start(now)
+  oscillator.stop(now + 0.1)
+}
 
 export default function CameraView({ onPhotosCapture }) {
   const videoRef = useRef(null)
@@ -98,6 +120,7 @@ export default function CameraView({ onPhotosCapture }) {
       }
 
       // Capture
+      playShutterSound()
       const photo = capturePhoto()
       if (photo) {
         photosRef.current.push(photo)
