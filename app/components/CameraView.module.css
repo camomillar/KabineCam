@@ -109,15 +109,20 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  animation: flash 0.3s ease-out;
+  background: #fff;
+  opacity: 0;
+  animation: flash 0.45s ease-out;
   pointer-events: none;
   z-index: 11;
 }
 
+/* Snaps to white, then fades out — the burst of a real flash */
 @keyframes flash {
   0% {
-    opacity: 1;
+    opacity: 0.92;
+  }
+  18% {
+    opacity: 0.72;
   }
   100% {
     opacity: 0;

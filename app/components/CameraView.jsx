@@ -48,6 +48,7 @@ export default function CameraView({ onPhotosCapture }) {
   const [capturing, setCapturing] = useState(false)
   const [countdown, setCountdown] = useState(null)
   const [photoCount, setPhotoCount] = useState(0)
+  const [flashCount, setFlashCount] = useState(0)
   const streamRef = useRef(null)
   const photosRef = useRef([])
 
@@ -137,16 +138,10 @@ export default function CameraView({ onPhotosCapture }) {
     setPhotoCount(0)
 
     for (let i = 0; i < PHOTO_COUNT; i++) {
-      // Flash effect
-      const canvas = canvasRef.current
-      if (canvas) {
-        const ctx = canvas.getContext('2d')
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-      }
-
-      // Capture
+      // Fire a fresh flash for every shot
+      setFlashCount(f => f + 1)
       playShutterSound()
+
       const photo = await capturePhoto()
       if (photo) {
         photosRef.current.push(photo)
@@ -199,9 +194,9 @@ export default function CameraView({ onPhotosCapture }) {
             </div>
           )}
 
-          {/* Flash Effect */}
-          {capturing && photoCount > 0 && (
-            <div className={styles.flashEffect} />
+          {/* Flash: the key remounts the node so it replays on every shot */}
+          {flashCount > 0 && (
+            <div key={flashCount} className={styles.flashEffect} />
           )}
         </div>
 
