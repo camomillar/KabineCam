@@ -65,10 +65,9 @@ const thump = (ctx, { at, duration, volume, from, to }) => {
   osc.stop(at + duration)
 }
 
-// An SLR firing: mirror up and curtain open, then curtain close and
-// mirror down about 110ms later — the classic "ka-chunk"
-const playShutterSound = () => {
-  const ctx = getAudioContext()
+// Fallback if the recording can't be loaded: an SLR firing, with the
+// mirror up and curtain open, then curtain close and mirror down 110ms later
+const playSynthesizedShutter = (ctx) => {
   const t = ctx.currentTime
 
   // Mirror slap + first curtain
@@ -81,6 +80,48 @@ const playShutterSound = () => {
   thump(ctx, { at: back, duration: 0.09, volume: 0.26, from: 260, to: 70 })
   noiseBurst(ctx, { at: back, duration: 0.06, volume: 0.4, type: 'bandpass', frequency: 1500, Q: 0.9 })
   noiseBurst(ctx, { at: back + 0.005, duration: 0.035, volume: 0.18, type: 'highpass', frequency: 4000, Q: 0.7 })
+}
+
+// Decoded once and reused, so the first shot isn't delayed by the fetch
+const SHUTTER_URL = '/camerasound.mp3'
+const SHUTTER_VOLUME = 1
+let shutterBuffer = null
+let shutterLoad = null
+
+const preloadShutter = () => {
+  if (!shutterLoad) {
+    shutterLoad = fetch(SHUTTER_URL)
+      .then(res => {
+        if (!res.ok) throw new Error(`${res.status} loading ${SHUTTER_URL}`)
+        return res.arrayBuffer()
+      })
+      .then(data => getAudioContext().decodeAudioData(data))
+      .then(buffer => {
+        shutterBuffer = buffer
+      })
+      .catch(err => {
+        console.warn('Shutter recording unavailable, using synth', err)
+      })
+  }
+  return shutterLoad
+}
+
+const playShutterSound = () => {
+  const ctx = getAudioContext()
+
+  if (!shutterBuffer) {
+    playSynthesizedShutter(ctx)
+    return
+  }
+
+  const source = ctx.createBufferSource()
+  source.buffer = shutterBuffer
+
+  const gain = ctx.createGain()
+  gain.gain.value = SHUTTER_VOLUME
+
+  source.connect(gain).connect(ctx.destination)
+  source.start()
 }
 
 export default function CameraView({ onPhotosCapture }) {
@@ -102,6 +143,8 @@ export default function CameraView({ onPhotosCapture }) {
 
   useEffect(() => {
     let cancelled = false
+
+    preloadShutter()
 
     const initCamera = async () => {
       try {
