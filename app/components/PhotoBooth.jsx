@@ -77,9 +77,9 @@ export default function PhotoBooth() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.logo} href="https://milla.work/" aria-label="Camilla Almeida's website">
+        <div className={styles.logo}>
           <img src="/logo.png" alt="Camilla Almeida logo" className={styles.logoMark} />
-        </a>
+        </div>
         <button
           className={styles.infoButton}
           onClick={() => setInfoOpen(true)}

@@ -7,6 +7,7 @@ const STACK = [
   { label: 'Design', items: ['Figma'] },
   { label: 'Frontend', items: ['JavaScript', 'React', 'Next.js'] },
   { label: 'Styling', items: ['CSS Modules'] },
+  { label: 'Hosting', items: ['Vercel'] },
   { label: 'AI', items: ['Claude Code'] },
 ]
 

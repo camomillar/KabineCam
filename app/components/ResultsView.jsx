@@ -6,8 +6,17 @@ import styles from './ResultsView.module.css'
 const FRAME_SPACING = 8
 const BORDER_COLOR = '#000'
 
+const toBlob = (canvas) =>
+  new Promise((resolve) => {
+    if (!canvas) return resolve(null)
+    canvas.toBlob(resolve, 'image/png')
+  })
+
 export default function ResultsView({ photos, onRetake }) {
   const stripCanvasRef = useRef(null)
+  // Encoded up front: iOS Safari only allows navigator.share() inside the
+  // user gesture, so awaiting the encode on click can forfeit that window
+  const stripBlobRef = useRef(null)
   const [downloading, setDownloading] = useState(false)
   const [stripReady, setStripReady] = useState(false)
   const [printDone, setPrintDone] = useState(false)
@@ -66,6 +75,9 @@ export default function ResultsView({ photos, onRetake }) {
       })
 
       setStripReady(true)
+
+      // Encode while the strip prints, so Download is instant
+      stripBlobRef.current = await toBlob(canvas)
     }
 
     createStrip()
@@ -100,17 +112,47 @@ export default function ResultsView({ photos, onRetake }) {
     ctx.putImageData(imageData, x, y)
   }
 
-  const downloadStrip = () => {
+  const downloadStrip = async () => {
+    if (downloading) return
     setDownloading(true)
-    const canvas = stripCanvasRef.current
 
-    setTimeout(() => {
+    try {
+      const blob = stripBlobRef.current ?? (await toBlob(stripCanvasRef.current))
+      if (!blob) throw new Error('Could not render the strip')
+
+      const filename = `kabinecam-${Date.now()}.png`
+      const file = new File([blob], filename, { type: 'image/png' })
+
+      // Phones: the share sheet is the only reliable route to the camera
+      // roll. iOS Safari ignores the download attribute and just opens the
+      // image in a viewer, leaving no obvious way to save it.
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'KabineCam' })
+          return
+        } catch (err) {
+          // Dismissing the sheet isn't a failure — don't fall through to a
+          // download the person just declined
+          if (err.name === 'AbortError') return
+        }
+      }
+
+      // Desktop: a blob URL, which avoids the multi-megabyte data: URL that
+      // large canvases produce
+      const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = canvas.toDataURL('image/png')
-      link.download = `kabinecam-strip-${Date.now()}.png`
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link) // some browsers ignore detached clicks
       link.click()
+      link.remove()
+      // Revoking immediately can cancel the download still in flight
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (err) {
+      console.error('Could not save the strip', err)
+    } finally {
       setDownloading(false)
-    }, 100)
+    }
   }
 
   return (
