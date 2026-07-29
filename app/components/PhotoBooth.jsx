@@ -77,8 +77,12 @@ export default function PhotoBooth() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <img src="/logo.png" alt="Camilla Almeida logo" className={styles.logoMark} />
+        <div className={styles.logo} aria-label="KabineCam" role="img">
+          <div className={styles.logoMark}>
+            <span className={styles.logoLens}>
+              <span className={styles.logoPupil} />
+            </span>
+          </div>
         </div>
         <button
           className={styles.infoButton}

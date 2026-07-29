@@ -21,11 +21,33 @@
   text-decoration: none;
 }
 
+/* Same two shapes as the favicon, drawn in CSS so it stays crisp at any size */
 .logoMark {
   width: 42px;
   height: 42px;
-  display: block;
+  border-radius: 12px;
+  background: #17161a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
+}
+
+.logoLens {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f9c6dd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoPupil {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #17161a;
 }
 
 .logo:hover .logoMark {
