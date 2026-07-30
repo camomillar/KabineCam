@@ -123,10 +123,14 @@ export default function ResultsView({ photos, onRetake }) {
       const filename = `kabinecam-${Date.now()}.png`
       const file = new File([blob], filename, { type: 'image/png' })
 
-      // Phones: the share sheet is the only reliable route to the camera
-      // roll. iOS Safari ignores the download attribute and just opens the
-      // image in a viewer, leaving no obvious way to save it.
-      if (navigator.canShare?.({ files: [file] })) {
+      // Only phones and tablets get the share sheet, where it's the one
+      // reliable route to the camera roll — iOS Safari ignores the download
+      // attribute and just opens the image in a viewer. Desktop browsers can
+      // share files too, but a share sheet is not what anyone expects from a
+      // Download button, so they take the direct download below.
+      const touchPrimary = window.matchMedia?.('(pointer: coarse)').matches
+
+      if (touchPrimary && navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'KabineCam' })
           return
