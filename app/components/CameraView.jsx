@@ -133,6 +133,8 @@ export default function CameraView({ onPhotosCapture }) {
   const [flashCount, setFlashCount] = useState(0)
   const streamRef = useRef(null)
   const photosRef = useRef([])
+  // Readable from event handlers without going stale, unlike `capturing`
+  const busyRef = useRef(false)
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -168,8 +170,22 @@ export default function CameraView({ onPhotosCapture }) {
 
     initCamera()
 
+    // Release the camera while the tab is in the background, so the indicator
+    // light doesn't stay on when someone wanders off to another tab. Skipped
+    // mid-session, where cutting the stream would ruin the shots in progress.
+    const handleVisibility = () => {
+      if (busyRef.current) return
+      if (document.hidden) {
+        stopCamera()
+      } else if (!streamRef.current) {
+        initCamera()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     return () => {
       cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibility)
       stopCamera()
     }
   }, [])
@@ -208,6 +224,8 @@ export default function CameraView({ onPhotosCapture }) {
   }
 
   const startCountdown = async () => {
+    // Hold the camera for the whole run, even if the tab loses focus
+    busyRef.current = true
     for (let i = COUNTDOWN_DURATION; i >= 1; i--) {
       setCountdown(i)
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -244,6 +262,7 @@ export default function CameraView({ onPhotosCapture }) {
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     // Pass to results
+    busyRef.current = false
     stopCamera()
     onPhotosCapture(photosRef.current)
   }
